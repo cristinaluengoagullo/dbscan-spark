@@ -1,6 +1,7 @@
 package com.esri.dbscan;
 
 /**
+ * Smear.java
  */
 public final class Smear
 {
@@ -16,10 +17,7 @@ public final class Smear
        * As of 2010/06/11, this method is identical to the (package private) hash
        * method in OpenJDK 7's java.util.HashMap class.
        */
-    public static int smear(int hashCode)
-    {
-        hashCode ^= (hashCode >>> 20) ^ (hashCode >>> 12);
-        return hashCode ^ (hashCode >>> 7) ^ (hashCode >>> 4);
+    public static int smear(long hashCode) {
+    	return Long.valueOf(hashCode).hashCode();
     }
-
 }

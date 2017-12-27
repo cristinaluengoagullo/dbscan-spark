@@ -69,7 +69,7 @@ object DBSCANApp extends App with Logging {
       .map(line => {
         // Convert each line to a Point instance.
         val tokens = line.split(fieldSeparator)
-        Point(tokens(fieldId).toInt, tokens(fieldX).toDouble, tokens(fieldY).toDouble)
+        Point(tokens(fieldId).toLong, List(tokens(fieldX).toDouble, tokens(fieldY).toDouble))
       })
       // Emit each point to all neighboring cell (if applicable)
       .flatMap(point => point.toCells(cellSize, eps).map(_ -> point))

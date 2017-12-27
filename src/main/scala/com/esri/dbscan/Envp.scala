@@ -12,7 +12,7 @@ case class Envp(xmin: Double, ymin: Double, xmax: Double, ymax: Double) {
     * @return the emit identifier.
     */
   def toEmitID(point: Point): Byte = {
-    toEmitID(point.x, point.y)
+    toEmitID(point.coords(0), point.coords(1))
   }
 
   /**
@@ -60,7 +60,7 @@ case class Envp(xmin: Double, ymin: Double, xmax: Double, ymax: Double) {
     * @return true if xmin<= point.x < xmax and ymin<= point.y < ymax otherwise false.
     */
   def isInside(point: Point): Boolean = {
-    isInside(point.x, point.y)
+    isInside(point.coords(0), point.coords(1))
   }
 
   /**

@@ -2,6 +2,7 @@ package com.esri.dbscan
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.Queue
 
 /**
   * Spatial index to quickly location neighbors of a point.
@@ -11,7 +12,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 case class SpatialIndex(eps: Double) {
 
-  type SIKey = (Int, Int)
+  type SIKey = List[Int]
   type SIVal = mutable.ArrayBuffer[DBSCANPoint]
 
   val grid = mutable.Map[SIKey, SIVal]()
@@ -23,34 +24,50 @@ case class SpatialIndex(eps: Double) {
     * @return this spatial index.
     */
   def +(point: DBSCANPoint) = {
-    val c = (point.x / eps).floor.toInt
-    val r = (point.y / eps).floor.toInt
-    grid.getOrElseUpdate((r, c), ArrayBuffer[DBSCANPoint]()) += point
+    var indexes = List[Int]()
+    for (i <- 0 to point.coords.size-1) {
+	val index = (point.coords(i) / eps).floor.toInt
+	indexes = indexes :+ index
+    }
+
+    grid.getOrElseUpdate(indexes, ArrayBuffer[DBSCANPoint]()) += point
     this
   }
 
   /**
+    * Filter all points within a distance <= eps of the given point
+    * @param origPoint the point to search around.
+    * @param origIndexes indexes of the cell to which the point is mapped
+    * @param accumIndexes indexes to 
+    * @return a sequence of points that are within a distance <= eps of the given point. 
+    */
+  def filterNeighbors(origPoint: DBSCANPoint, origIndexes: List[Int], accumIndexes: List[Int]) : Seq[DBSCANPoint] = {
+    var points = Seq[DBSCANPoint]()
+    if (origIndexes.isEmpty) {
+        points = grid.getOrElse(accumIndexes, Seq.empty)
+                     .filter(point => origPoint.distance(point) <= eps)
+    } else {
+        val index = origIndexes(0)
+        var indexes = List[Int]()
+        if (origIndexes.size > 1) {
+            indexes = origIndexes.slice(1,origIndexes.size)
+        } 
+        points = (index - 1 to index + 1).flatMap{i => filterNeighbors(origPoint,indexes,accumIndexes:+i)}
+    }
+    points
+  }
+
+  /**
     * Find all the neighbors of the specified point.
-    * This is a "cheap" implementation, where the neighborhood consists of a bounding box centered on the supplied
-    * point, and the width and height of the box are 2 times the spatial index cell size.
-    *
     * @param point the point to search around.
-    * @return a sequence of points that are in the neighborhood of the supplied point.
+    * @return a sequence of points that are within a distance <= eps of the given point.
     */
   def findNeighbors(point: DBSCANPoint) = {
-    val c = (point.x / eps).floor.toInt
-    val r = (point.y / eps).floor.toInt
-
-    val xmin = point.x - eps
-    val ymin = point.y - eps
-    val xmax = point.x + eps
-    val ymax = point.y + eps
-
-    (r - 1 to r + 1).flatMap(i =>
-      (c - 1 to c + 1).flatMap(j =>
-        grid.getOrElse((i, j), Seq.empty)
-          .filter(point => xmin < point.x && point.x < xmax && ymin < point.y && point.y < ymax)
-      )
-    )
+    var indexes = List[Int]()
+    for (i <- 0 to point.coords.size-1) {
+        val index = (point.coords(i) / eps).floor.toInt
+        indexes = indexes :+ index
+    }
+    filterNeighbors(point,indexes,List[Int]())
   }
 }

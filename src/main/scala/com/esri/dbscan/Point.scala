@@ -1,6 +1,7 @@
 package com.esri.dbscan
 
 import scala.collection.mutable.ArrayBuffer
+import math._
 
 /**
   * Location in 2D space.
@@ -9,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
   * @param x  the horizontal 2D placement.
   * @param y  the vertical 2D placement.
   */
-class Point(val id: Int, val x: Double, val y: Double) extends Serializable {
+class Point(val id: Long, val coords: List[Double]) extends Serializable {
 
   /**
     * Check if supplied point is the same as this point. This is a naive implementation as it checks only the point identifier.
@@ -31,13 +32,11 @@ class Point(val id: Int, val x: Double, val y: Double) extends Serializable {
     Smear.smear(id)
   }
 
-  /*
-    def distance2(that: Point) = {
-      val dx = x - that.x
-      val dy = y - that.y
-      dx * dx + dy * dy
-    }
-  */
+  
+  def distance(other: Point) = {
+    sqrt((coords zip other.coords).map { case (x,y) => pow(y - x, 2) }.sum)
+  }
+
 
   /**
     * Convert this point to a sequence of <code>Cell</code> instances based on its location in its parent cell.
@@ -49,8 +48,8 @@ class Point(val id: Int, val x: Double, val y: Double) extends Serializable {
     * @return the parent cell and all the neighboring cells if the point is close to the edge.
     */
   def toCells(cellSize: Double, eps: Double) = {
-    val xfac = (x / cellSize).floor
-    val yfac = (y / cellSize).floor
+    val xfac = (coords(0) / cellSize).floor
+    val yfac = (coords(1) / cellSize).floor
     val cx = xfac * cellSize
     val cy = yfac * cellSize
     val xmin = cx + eps
@@ -61,27 +60,27 @@ class Point(val id: Int, val x: Double, val y: Double) extends Serializable {
     val col = xfac.toInt
     val cellArr = new ArrayBuffer[Cell](4)
     cellArr += Cell(row, col)
-    if (x < xmin) {
+    if (coords(0) < xmin) {
       cellArr += Cell(row, col - 1)
-      if (y < ymin) {
+      if (coords(1) < ymin) {
         cellArr += Cell(row - 1, col - 1)
         cellArr += Cell(row - 1, col)
-      } else if (y > ymax) {
+      } else if (coords(1) > ymax) {
         cellArr += Cell(row + 1, col - 1)
         cellArr += Cell(row + 1, col)
       }
-    } else if (x > xmax) {
+    } else if (coords(0) > xmax) {
       cellArr += Cell(row, col + 1)
-      if (y < ymin) {
+      if (coords(1) < ymin) {
         cellArr += Cell(row - 1, col + 1)
         cellArr += Cell(row - 1, col)
-      } else if (y > ymax) {
+      } else if (coords(1) > ymax) {
         cellArr += Cell(row + 1, col + 1)
         cellArr += Cell(row + 1, col)
       }
-    } else if (y < ymin) {
+    } else if (coords(1) < ymin) {
       cellArr += Cell(row - 1, col)
-    } else if (y > ymax) {
+    } else if (coords(1) > ymax) {
       cellArr += Cell(row + 1, col)
     }
     cellArr
@@ -90,7 +89,7 @@ class Point(val id: Int, val x: Double, val y: Double) extends Serializable {
   /**
     * @return text representation of this instance.
     */
-  override def toString = s"Point($id,$x,$y)"
+  override def toString = s"Point($id,$coords)"
 
 }
 
@@ -106,7 +105,7 @@ object Point extends Serializable {
     * @param y  the vertical placement
     * @return a new <code>Point</code> instance.
     */
-  def apply(id: Int, x: Double, y: Double) = {
-    new Point(id, x, y)
+  def apply(id: Long, coords: List[Double]) = {
+    new Point(id, coords)
   }
 }
